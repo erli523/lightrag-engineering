@@ -37,6 +37,25 @@ logger = logging.getLogger("lightrag")
 _INTERNAL_SERVER_ERROR_MESSAGE = "Internal server error"
 
 
+def _make_console_output_unicode_safe() -> None:
+    """Prevent the startup banner from crashing on legacy console encodings.
+
+    Windows may expose stdout as GBK/cp936 (and redirected services may use an
+    even narrower code page).  The splash screen contains emoji and box-drawing
+    characters, so strict encoding turns a cosmetic banner into a server startup
+    failure.  Keep the active encoding, but escape characters it cannot represent.
+    This is intentionally best-effort because test doubles and embedded runtimes
+    do not always provide ``TextIOBase.reconfigure``.
+    """
+
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        try:
+            reconfigure(errors="backslashreplace")
+        except (AttributeError, OSError, ValueError):
+            logger.debug("Unable to make console output Unicode-safe", exc_info=True)
+
+
 def internal_server_error(exc: Exception) -> HTTPException:
     """Build a client-safe HTTP 500 that never exposes raw exception text (CWE-209).
 
@@ -605,7 +624,8 @@ def display_splash_screen(args: argparse.Namespace) -> None:
     Args:
         args: Parsed command line arguments
     """
-    # Banner
+    _make_console_output_unicode_safe()
+
     # Banner
     top_border = "╔══════════════════════════════════════════════════════════════╗"
     bottom_border = "╚══════════════════════════════════════════════════════════════╝"

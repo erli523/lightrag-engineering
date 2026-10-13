@@ -6399,9 +6399,14 @@ def create_document_routes(
                     )
                 )
 
-                # Build status summary
-                # Handle both DocStatus enum and string cases for robust deserialization
-                status_key = str(doc_status.status)
+                # Match DocStatusResponse and paginated status-count values.  str(Enum)
+                # produces "DocStatus.PROCESSED", which is unstable for API clients.
+                raw_status = doc_status.status
+                status_key = (
+                    raw_status.value
+                    if isinstance(raw_status, DocStatus)
+                    else str(raw_status).rsplit(".", 1)[-1].lower()
+                )
                 status_summary[status_key] = status_summary.get(status_key, 0) + 1
 
             return TrackStatusResponse(
