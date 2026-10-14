@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test'
+import { fileURLToPath } from 'node:url'
 
 /**
  * Workspace credential probe: the entry has no manual API-key control, so
@@ -260,7 +261,7 @@ describe('initialDialogAcknowledgement (the shell\'s per-mount baseline)', () =>
     // wiring is one argument in a component this repo has no DOM harness to
     // render. Read the source: `useState(0)` there is the defect itself.
     const source = await Bun.file(
-      new URL('./WorkspaceApp.tsx', import.meta.url).pathname
+      fileURLToPath(new URL('./WorkspaceApp.tsx', import.meta.url))
     ).text()
     const initializer = source.match(
       /const \[dismissedDialogRequests[^=]*=\s*useState\(\s*([^)]*?)\s*\)/

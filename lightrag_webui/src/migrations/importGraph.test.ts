@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync, existsSync } from 'fs'
-import { execSync } from 'child_process'
+import { existsSync, readFileSync, readdirSync } from 'fs'
 import { dirname, join, resolve } from 'path'
 
 /**
@@ -67,6 +66,17 @@ function transitiveGraph(entryFile: string): Set<string> {
     }
   }
   return seen
+}
+
+function sourceFiles(root: string): string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(root, entry.name)
+    if (entry.isDirectory()) return sourceFiles(path)
+    if (!entry.isFile() || !/\.tsx?$/.test(entry.name) || entry.name.includes('.test.')) {
+      return []
+    }
+    return [path]
+  })
 }
 
 describe('entry import order', () => {
@@ -138,16 +148,14 @@ describe('navigation core stays graph-free', () => {
 
 describe('no path-rewriting hard navigation in the SPA', () => {
   test('frontend source contains no location.href= / location.replace( / location.assign(', () => {
-    const output = execSync(
-      String.raw`grep -rnE "location\.href\s*=|location\.replace\(|location\.assign\(" --include='*.ts' --include='*.tsx' . || true`,
-      { cwd: SRC, encoding: 'utf8' }
+    const forbidden = /location\.href\s*=|location\.replace\(|location\.assign\(/
+    const offenders = sourceFiles(SRC).flatMap((file) =>
+      readFileSync(file, 'utf8')
+        .split(/\r?\n/)
+        .flatMap((line, index) =>
+          forbidden.test(line) ? [`${file}:${index + 1}:${line}`] : []
+        )
     )
-    const offenders = output
-      .split('\n')
-      .filter(Boolean)
-      // window.location.reload() is allowed (same-URL reload, keeps entry);
-      // test files may reference these strings.
-      .filter((line) => !line.includes('.test.'))
     expect(offenders).toEqual([])
   })
 })

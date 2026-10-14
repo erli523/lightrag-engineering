@@ -53,7 +53,9 @@ describe('BFCache consumers', () => {
     expect(documentManagerSource).toContain(
       'pipelineActive, pageRestoreGeneration, startPollingInterval'
     )
-    expect(documentManagerSource).toContain('pageRestoreGeneration,\n    fetchPaginatedDocuments')
+    expect(documentManagerSource.replaceAll('\r\n', '\n')).toContain(
+      'pageRestoreGeneration,\n    fetchPaginatedDocuments'
+    )
   })
 
   test('the initial document state is distinct from a confirmed empty response', async () => {
