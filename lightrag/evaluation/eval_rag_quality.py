@@ -41,6 +41,7 @@ import argparse
 import asyncio
 import csv
 import json
+import logging
 import math
 import os
 import sys
@@ -52,7 +53,13 @@ from typing import Any, Dict, List
 
 import httpx
 from dotenv import load_dotenv
-from lightrag.utils import logger
+
+# Keep the evaluator runnable in an isolated RAGAS environment.  Importing the
+# application-wide logger from ``lightrag.utils`` pulls in the complete server
+# dependency graph even though this standalone client only needs logging.
+logger = logging.getLogger("lightrag.evaluation")
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 # Suppress LangchainLLMWrapper deprecation warning
 # We use LangchainLLMWrapper for stability and compatibility with all RAGAS versions
@@ -105,6 +112,24 @@ except ImportError:
 CONNECT_TIMEOUT_SECONDS = 180.0
 READ_TIMEOUT_SECONDS = 300.0
 TOTAL_TIMEOUT_SECONDS = 180.0
+
+
+def _build_embedding_kwargs(model: str, api_key: str) -> dict[str, Any]:
+    """Build portable LangChain embedding client options for evaluation."""
+    kwargs: dict[str, Any] = {
+        "model": model,
+        "api_key": api_key,
+        # OpenAIEmbeddings otherwise tokenizes input locally and sends arrays
+        # of token IDs. Many OpenAI-compatible embedding endpoints accept only
+        # strings. Evaluation contexts are already bounded, so keep the wire
+        # format portable.
+        "check_embedding_ctx_length": False,
+        "chunk_size": int(os.getenv("EVAL_EMBEDDING_BATCH_SIZE", "25")),
+    }
+    dimension = os.getenv("EVAL_EMBEDDING_DIM")
+    if dimension:
+        kwargs["dimensions"] = int(dimension)
+    return kwargs
 
 
 def _is_nan(value: Any) -> bool:
@@ -179,10 +204,9 @@ class RAGEvaluator:
             "max_retries": int(os.getenv("EVAL_LLM_MAX_RETRIES", "5")),
             "request_timeout": int(os.getenv("EVAL_LLM_TIMEOUT", "180")),
         }
-        embedding_kwargs = {
-            "model": eval_embedding_model,
-            "api_key": eval_embedding_api_key,
-        }
+        embedding_kwargs = _build_embedding_kwargs(
+            eval_embedding_model, eval_embedding_api_key
+        )
 
         if eval_llm_base_url:
             llm_kwargs["base_url"] = eval_llm_base_url
