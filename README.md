@@ -1,5 +1,7 @@
 <div align="center">
 
+> **中文工程实践说明：** 本分支的技术栈、核心思路、自主改动、验证结果和边界见 [PROJECT_OVERVIEW_CN.md](PROJECT_OVERVIEW_CN.md)。
+
 <div style="margin: 20px 0;">
   <img src="./assets/logo.png" width="120" height="120" alt="LightRAG Logo" style="border-radius: 20px; box-shadow: 0 8px 32px rgba(0, 217, 255, 0.3);">
 </div>
