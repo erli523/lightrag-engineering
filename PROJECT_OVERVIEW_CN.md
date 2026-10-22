@@ -49,6 +49,12 @@ LightRAG 是一个图增强的 RAG 完整应用。它从文档中抽取实体和
 - RAGAS 固定 6 问样本全部成功：Faithfulness 0.9641、Answer Relevance 0.9683、Context Recall 1.0000、Context Precision 1.0000。该小样本用于回归，不外推为通用准确率。
 - 前端 **613 tests passed**，TypeScript、lint、production build 通过；Python 定向回归 **6 tests passed**。
 
+## 当前演示数据规模
+
+截至 2026-10-22，本地受控语料为 5 篇 Markdown（约 9 KB），形成 5 个文本 chunk、58 个实体节点和 74 条关系边。向量索引包括 5 条 chunk 向量、58 条实体向量和 74 条关系向量，共 137 条 1024 维记录；12 个持久化文件合计约 1.59 MiB。
+
+这里的“数据库”是 JsonKVStorage、JsonDocStatusStorage、NetworkX/GraphML 和 NanoVectorDB 的本地组合，没有把 PostgreSQL、Neo4j、Milvus 或 Qdrant 描述为已启用。该规模用于验证完整链路和回归，不代表大规模性能测试。
+
 ## 适合作为项目经历的价值
 
 这个项目覆盖文档状态机、图谱构建、混合检索、Rerank、引用溯源、数据生命周期和检索评测。面试时可以从一次文档入库追到四类存储，再解释不同 query mode 的召回对象和 RAGAS 指标，形成完整的知识工程叙事。
